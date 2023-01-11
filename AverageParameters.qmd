@@ -1,0 +1,379 @@
+---
+title: "6yearrecord"
+format: html
+editor: visual
+---
+
+## Import data
+
+Example code
+
+```{r}
+library(dataRetrieval)
+library(ggplot2)
+library(lubridate)
+library(tidyr)
+
+pcode<- readNWISpCode("all") #See all codes- you can also figure out which code you want to use by clicking "downlaod data" on the site and the code shows up at the top
+
+
+# Set up variables like site, type of info, and date
+siteNo <- "15236895"
+pCode <- "72194"
+start.date <- "2022-05-01"
+end.date <- "2022-09-15"
+
+#create variable with informatin 
+wolvprecip<- readNWISuv(siteNumbers = siteNo, 
+                        parameterCd = pCode,
+                        startDate= start.date,
+                        endDate= end.date)
+
+#extra background info
+url <- attr(wolvprecip, "url")
+names(wolvprecip)
+wolvprecip <- renameNWISColumns(wolvprecip)
+
+#set lines around sample days
+xinter<- as.Date(c("2022-08-05", "2022-09-05"))
+
+#create ggplot with precip data
+ts <- ggplot(data= wolvprecip,
+             aes(dateTime, X_72194_Inst))+
+  xlab("Date")+
+  ylab("Cumulative Precip (mm)")+
+  ggtitle("990 Precip 2022")+
+  geom_line(color="skyblue3", size= 1.5)+
+  theme(panel.background = element_rect(fill= 'white'))+
+  geom_vline(xintercept = as.Date("2022-08-05"), linetype= "dashed", color= "black")
+```
+
+Import Precip data
+
+```{r}
+library(dataRetrieval)
+library(ggplot2)
+
+#pcode<- readNWISpCode("all") #See all codes- you can also figure out which code you want to use by clicking "downlaod data" on the site and the code shows up at the top
+
+# Set up variables like site, type of info, and date
+siteNo <- "15236895"
+pCode <- "00020"
+start.date <- "2021-01-01"
+end.date <- "2021-12-31"
+
+#create variable with informatin 
+wolvprecip<- readNWISuv(siteNumbers = siteNo, 
+                        parameterCd = pCode,
+                        startDate= start.date,
+                        endDate= end.date)
+
+#extra background info
+url <- attr(wolvprecip, "url")
+names(wolvprecip)
+wolvprecip <- renameNWISColumns(wolvprecip)
+
+#set lines around sample days
+xinter<- as.Date(c("2022-08-05", "2022-09-05"))
+
+#create ggplot with precip data
+tsprecip <- ggplot(data= wolvprecip,
+             aes(dateTime, X_72194_Inst))+
+  xlab("Date")+
+  ylab("Cumulative Precip (mm)")+
+  ggtitle("990 Precip 2022")+
+  geom_line(color="skyblue3", size= 1.5)+
+  theme(panel.background = element_rect(fill= 'white'))+
+  geom_vline(xintercept = as.Date("2022-08-05"), linetype= "dashed", color= "black")
+```
+
+Temperature
+
+```{r}
+# Set up variables like site, type of info, and date
+siteNo <- "15236895"
+pCode <- "00020"
+start.date <- "2021-01-01"
+end.date <- "2021-12-31"
+
+#create variable with informatin 
+temp990<- readNWISuv(siteNumbers = siteNo, 
+                        parameterCd = pCode,
+                        startDate= start.date,
+                        endDate= end.date)
+
+#extra background info
+url <- attr(temp990, "url")
+names(temp990)
+temp990 <- renameNWISColumns(temp990)
+
+#create ggplot with precip data
+tstemp <- ggplot(data= temp990,
+             aes(dateTime, X_PROBE1_00020_Inst))+
+  xlab("Date")+
+  ylab("Temperature C")+
+  ggtitle("990 Temperature 2021")+
+  geom_line(color="skyblue3", size= 1.5)+
+  theme(panel.background = element_rect(fill= 'white'))
+
+plot(tstemp)
+```
+
+Discharge
+
+```{r}
+# Set up variables like site, type of info, and date
+siteNo <- "15236900"
+pCode <- "00060"
+start.date <- "2021-01-01"
+end.date <- "2021-12-31"
+
+#create variable with informatin 
+Q990<- readNWISuv(siteNumbers = siteNo, 
+                        parameterCd = pCode,
+                        startDate= start.date,
+                        endDate= end.date)
+
+#extra background info
+url <- attr(Q990, "url")
+names(Q990)
+Q990 <- renameNWISColumns(Q990)
+
+#create ggplot with precip data
+tsQ <- ggplot(data= Q990,
+             aes(dateTime, Flow_Inst))+
+  xlab("Date")+
+  ylab("Streamflow, cfs")+
+  ggtitle("Wolverine Creek Q 2021")+
+  geom_line(color="skyblue3", size= 1.5)+
+  theme(panel.background = element_rect(fill= 'white'))
+
+plot(tsQ)
+
+```
+
+Temp data- goes back to 1/1/2020
+
+Pseudocode: download 15 min data from usgs
+
+calculate daily ave
+
+repeat for each year, add to a df
+
+average the daily averages
+
+```{r}
+library(dplyr)
+####### import and clean temp data from 2020 #######
+setwd("/Users/hannahrichardson/Documents/BSU/Research/Data/Raw Data/GageandMetData")
+temp20<- read.csv("2020temp.csv")
+colnames(temp20)<-temp20[27,]
+names(temp20)[names(temp20) == '1411_00020'] <- 'temp'
+temp20$temp<-as.numeric(temp20$temp)
+temp20<-temp20[-c(1:27),]
+temp20$datetime <- mdy_hm(temp20$datetime, tz='America/Anchorage')
+
+dailytemp20<- aggregate(temp20$temp, list(day=cut(as.POSIXct(temp20$datetime), "day")), mean) 
+dailytemp20$doy20 <- yday(dailytemp20$day)
+colnames(dailytemp20) <- c('datetime20', 'temp20', 'doy20')
+
+####### repeat for 2021 #######
+setwd("/Users/hannahrichardson/Documents/BSU/Research/Data/Raw Data/GageandMetData")
+temp21<- read.csv("2021temp.csv")
+colnames(temp21)<-temp21[27,]
+names(temp21)[names(temp21) == '1411_00020'] <- 'temp'
+temp21$temp<-as.numeric(temp21$temp)
+temp21<-temp21[-c(1:28),]
+temp21$datetime <- mdy_hm(temp21$datetime, tz='America/Anchorage')
+
+dailytemp21<- aggregate(temp21$temp, list(day=cut(as.POSIXct(temp21$datetime), "day")), mean) 
+dailytemp21$doy21 <- yday(dailytemp21$day)
+colnames(dailytemp21) <- c('datetime21', 'temp21', 'doy21')
+
+####### repeat for 2022 #######
+setwd("/Users/hannahrichardson/Documents/BSU/Research/Data/Raw Data/GageandMetData")
+temp22<- read.csv("2022temp.csv")
+colnames(temp22)<-temp22[28,]
+names(temp22)[names(temp22) == '1411_00020'] <- 'temp'
+temp22$temp<-as.numeric(temp22$temp)
+temp22<-temp22[-c(1:29),]
+temp22$datetime <- mdy_hm(temp22$datetime, tz='America/Anchorage')
+
+dailytemp22<- aggregate(temp22$temp, list(day=cut(as.POSIXct(temp22$datetime), "day")), mean) 
+dailytemp22$doy22 <- yday(dailytemp22$day)
+colnames(dailytemp22) <- c('datetime22', 'temp22', 'doy22')
+
+
+######### join all years together #########
+alltemp<- full_join(dailytemp20, dailytemp21, by = c("doy20" = "doy21"))
+
+alltemp<- full_join(alltemp, dailytemp22, 
+                    by = c("doy20" = "doy22")) 
+alltemp$avetemp <-rowMeans(alltemp[,c(2,5,7)], na.rm =T)
+alltemp$doy <- yday(alltemp$datetime20)
+```
+
+Pseudocode: download 15 min data from usgs
+
+Turn into daily precip
+
+Sum to cumulative precip for each year
+
+Take ave of all years
+
+```{r}
+####### 2020 precip  #########
+precip20<- readNWISuv(siteNumbers = "15236895", 
+                        parameterCd = "72194",
+                        startDate= "2020-10-19",
+                        endDate= "2020-12-31")  %>%
+    select(datetime = dateTime, Precip1 = X_..2.._72194_00000, Precip2 = X_72194_00000) %>%
+    mutate(datetime = with_tz(datetime, tz = 'America/Anchorage'))
+
+precipdiff<- diff(precip20$Precip2) 
+precipdiff<- data.frame(precip20$datetime[2:length(precip20$datetime)],precipdiff) 
+colnames(precipdiff)[1] ="datetime" 
+precipdiff$precipdiff[precipdiff$precipdiff > 300 |precipdiff$precipdiff < 0 ] = NA
+
+Sum20 <- aggregate(precipdiff["precipdiff"], list(day=cut(as.POSIXct(precipdiff$datetime), "day")),sum) %>%
+  mutate(datetime = with_tz(day, tz = 'America/Anchorage'))
+Sum20$precipdiff[Sum20$precipdiff == 0 ] = NA 
+Sum20[,"cum_precip20"] <- cumsum(replace_na(Sum20$precipdiff, 0))
+Sum20$doy20 <- yday(Sum20$day)
+
+####### 2021 Precip #######
+precip21<- readNWISuv(siteNumbers = "15236895", 
+                        parameterCd = "72194",
+                        startDate= "2021-01-01",
+                        endDate= "2021-12-31")  %>%
+    select(datetime = dateTime, Precip1 = X_..2.._72194_00000, Precip2 = X_72194_00000)%>%
+    mutate(datetime = with_tz(datetime, tz = 'America/Anchorage'))
+
+precipdiff<- diff(precip21$Precip2) 
+precipdiff<- data.frame(precip21$datetime[2:length(precip21$datetime)],precipdiff) 
+colnames(precipdiff)[1] ="datetime" 
+precipdiff$precipdiff[precipdiff$precipdiff > 300 |precipdiff$precipdiff < 0 ] = NA
+
+Sum21 <- aggregate(precipdiff["precipdiff"], list(day=cut(as.POSIXct(precipdiff$datetime), "day")),sum) # %>%
+  #mutate(datetime = with_tz(day, tz = 'America/Anchorage'))
+Sum21$precipdiff[Sum21$precipdiff == 0 ] = NA 
+Sum21[,"cum_precip21"] <- cumsum(replace_na(Sum21$precipdiff, 0))
+Sum21$doy21 <- yday(Sum21$day)
+
+######### 2022 Precip ##########
+precip22<- readNWISuv(siteNumbers = "15236895", 
+                        parameterCd = "72194",
+                        startDate= "2022-01-01",
+                        endDate= "2022-12-31")  %>%
+    select(datetime = dateTime, Precip1 = X_..2.._72194_00000, Precip2 = X_72194_00000) %>%
+    mutate(datetime = with_tz(datetime, tz = 'America/Anchorage'))
+
+precipdiff<- diff(precip22$Precip2) 
+precipdiff<- data.frame(precip22$datetime[2:length(precip22$datetime)],precipdiff) 
+colnames(precipdiff)[1] ="datetime" 
+precipdiff$precipdiff[precipdiff$precipdiff > 300 |precipdiff$precipdiff < 0 ] = NA
+
+Sum22 <- aggregate(precipdiff["precipdiff"], list(day=cut(as.POSIXct(precipdiff$datetime), "day")),sum) %>%
+  mutate(datetime = with_tz(day, tz = 'America/Anchorage'))
+Sum22$precipdiff[Sum22$precipdiff == 0 ] = NA 
+Sum22[,"cum_precip22"] <- cumsum(replace_na(Sum22$precipdiff, 0))
+Sum22$doy22 <- yday(Sum22$day)
+
+allprecip<- full_join(Sum21, Sum20, by = c("doy21" = "doy20"))
+allprecip<- full_join(allprecip, Sum22, 
+                    by = c("doy21" = "doy22")) 
+allprecip$aveprecip <-rowMeans(allprecip[,c(2,7,11)], na.rm =T)
+allprecip[,"cum_ave"] <- cumsum(replace_na(allprecip$aveprecip, 0))
+allprecip$doy <- yday(allprecip$datetime.x)
+```
+
+## Using downloaded txt from USGS stats web service
+
+https://waterservices.usgs.gov/rest/Statistics-Service.html
+
+WolvCreekAllQ uses all years Q data and reports percentiles. This data goes as far back as 1967 to present and uses code 00060 (discharge, cfs).
+
+```{r}
+library(readxl)
+setwd("/Users/hannahrichardson/Documents/BSU/Research/Data/Raw Data/GageandMetData/")
+Qdata<-read_xlsx("WolvCreekAllQ.xlsx", sheet = 'WolvCreekAllQ')
+
+library(dplyr)    
+Qdata <- Qdata %>% 
+   mutate(month = ifelse(month_nu == 1,'December',""))
+head(Qdata)
+
+Qdata$Date<-as.Date(with(Qdata,paste(month_nu,day_nu,sep="-")),"%m-%d")
+Qdata$doy<-yday(Qdata$Date)
+```
+
+```{r}
+###### Combine all data ########
+fulldf <- as.data.frame(Qdata$doy)
+fulldf$aveQ <- Qdata$p50_va
+
+fulldf<- full_join (fulldf, alltemp, by = c("Qdata$doy" = "doy20"))
+fulldf<- full_join(fulldf, allprecip, by = c("Qdata$doy" = "doy"))
+```
+
+https://stackoverflow.com/questions/65844743/rainfall-runoff-plotting
+
+To do:
+
+Make dataframe with date, ave Q, ave temp, and ave precip
+
+```{r}
+library(ggplot2)
+library(data.table)
+library(lubridate)
+library(tidyverse)
+
+# Calculate the range needed to avoid having your hyetograph and hydrograph overlap 
+maxRange <- 500 #set how wide of the first axis (from streamflow)
+coeff <- .5 #set the shrink coeffcient of Precipitation (play with this until it looks ok)
+coeff2<- 0.08 #set the coeffieicent for temp and Q
+
+
+# Plot the data
+finalplot<- ggplot(data = fulldf, aes(x = doy)) +
+  # Use geom_tile to create the inverted hyetograph
+  # y = the center point of each bar
+  geom_tile(aes(y = maxRange - aveprecip/coeff/2, 
+                height = aveprecip/coeff, 
+                fill = 'PColor')
+            )+
+  # Plot discharge data
+  geom_line(aes(y = aveQ), 
+            alpha = 0.8,
+            size = 0.7,
+            color = 'gray23') +
+  geom_line(aes(y = ((avetemp +20) /coeff2)), 
+            alpha = 0.8,
+            size = 0.7,
+            color = 'rosybrown')+
+  # Create a second axis with sec_axis() and format the labels to display the original precipitation units.
+  scale_y_continuous(name = "Average Streamflow (cfs)",
+                     limit = c(0, maxRange),
+                     expand = c(0, 0),
+                     sec.axis = sec_axis(trans =  ~. * coeff2 -20,
+                                         name = "Average Temperature (C)"))+
+  scale_fill_manual(values = c('PColor' = '#c4d3dfff'),
+                    labels = c('PColor' = 'Precipitation (mm/day)'),
+                    name = NULL)+
+  scale_color_manual(values = c('black'), 
+                     name = NULL)+
+  xlab("Day of Year")+
+  theme_bw()+
+  guides(color = guide_legend(nrow = 1)) +
+  theme(
+    # legend.position = c(0.75, 0.5),
+    legend.position = 'top',
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank())
+
+finalplot
+
+pdf("tempprecipQ.pdf", width= 9, height = 5)
+print(finalplot)
+dev.off()
+```
